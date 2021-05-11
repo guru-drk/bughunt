@@ -80,7 +80,7 @@ public class EventHandler implements RequestHandler<ScheduledEvent, String> {
             waiter.run(new WaiterParameters<>(new GetObjectMetadataRequest(Constants.SUMMARY_BUCKET, summaryUpdateName)));
             deleteProcessedFiles(filesToDelete);
             logger.log("All updates successfully processed");
-        } catch (WaiterTimedOutException e){
+        } catch (WaiterTimedOutException e){ 
             throw new RuntimeException("Failed to write sumary status, will be retried in 15 minutes");
         }
     } 
