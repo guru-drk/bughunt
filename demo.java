@@ -68,6 +68,14 @@ public class EventHandler implements RequestHandler<ScheduledEvent, String> {
             filesToDelete.put(bucketName, filesProcessed); 
     }); 
          
+       try{
+            waiter.run(new WaiterParameters<>(new GetObjectMetadataRequest(Constants.SUMMARY_BUCKET, summaryUpdateName)));
+            deleteProcessedFiles(filesToDelete);
+            logger.log("All updates successfully processed");
+        } catch (WaiterTimedOutException e){ 
+            throw new RuntimeException("Failed to write sumary status, will be retried in 15 minutes");
+        }
+     
         final AmazonS3 s3Client = EventHandler.getS3Client(); 
         //Create a new file in the Constants.SUMMARY_BUCKET 
         logger.log("Map of statuses -> " + latestStatusForTrackingNumber); 
@@ -76,13 +84,7 @@ public class EventHandler implements RequestHandler<ScheduledEvent, String> {
         EventHandler.getS3Client().putObject(Constants.SUMMARY_BUCKET, summaryUpdateName, latestStatusForTrackingNumber.toString());
      
         Waiter waiter = EventHandler.getS3Client().waiters().objectExists();
-        try{
-            waiter.run(new WaiterParameters<>(new GetObjectMetadataRequest(Constants.SUMMARY_BUCKET, summaryUpdateName)));
-            deleteProcessedFiles(filesToDelete);
-            logger.log("All updates successfully processed");
-        } catch (WaiterTimedOutException e){ 
-            throw new RuntimeException("Failed to write sumary status, will be retried in 15 minutes");
-        }
+      
     } 
  
     private List<KeyVersion> processEventsInBucket(String bucketName, LambdaLogger logger, ConcurrentHashMap<String, Pair<Long, String>> latestStatusForTrackingNumber) { 
